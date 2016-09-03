@@ -1,4 +1,4 @@
 .vrt-suite.js
 node_modules/*
 images/*
-coverage/*
+test/coverage/*
