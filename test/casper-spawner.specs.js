@@ -1,7 +1,6 @@
 const chai = require( 'chai' )
 const sinon = require( 'sinon' )
 const sinonChai = require( 'sinon-chai' )
-const childProcess = require( 'child_process' )
 const fs = require( 'fs' )
 const CasperSpawner = require( '../lib/casper-spawner' )
 
@@ -42,21 +41,41 @@ describe( 'Casper spawner', function(){
     } )
 
     describe( 'done', function() {
-      it( 'succeeds', function() {
+      it( 'callback is not called when no baseline/failure paths are defined', function() {
         const casperSpawner = new CasperSpawner()
-        const doneSpy = sinon.spy( )
+        const doneSpy = sinon.spy()
 
-        casperSpawner.done( doneSpy, 0 )
+        casperSpawner.done( {
+          paths: {
+            fake: 'path'
+          }
+        }, doneSpy, 0 )
 
-        expect( doneSpy ).to.have.been.calledOnce.and.calledWith( 0 )
+        expect( doneSpy ).to.have.been.calledOnce
+        expect( doneSpy.getCall(0).args[0] ).to.be.instanceOf( Error )
+        expect( doneSpy.getCall(0).args[0].message ).to.equal( 'Missing baseline or failure folder paths' )
       } )
-      it( 'fails', function() {
+
+      it( 'callback is called twice if baseline and failure paths are defined', function() {
         const casperSpawner = new CasperSpawner()
         const doneSpy = sinon.spy( )
+        const errorCode = 42
+        const paths = [ 'path1', 'path2' ]
+        const pushSpy = sinon.spy( casperSpawner, 'push' )
 
-        casperSpawner.done( doneSpy, 42 )
+        casperSpawner.done( {
+          paths: {
+            baseline: paths[ 0 ],
+            failure: paths[ 1 ]
+          }
+        }, doneSpy, errorCode )
 
-        expect( doneSpy ).to.have.been.calledOnce.and.calledWith( 42 )
+        expect( doneSpy ).to.have.been.calledOnce
+        expect( pushSpy ).to.have.been.calledTwice
+        expect( pushSpy.getCall( 0 ).args[ 0 ].directoryPath ).to.equal( paths[ 0 ] )
+        expect( pushSpy.getCall( 1 ).args[ 0 ].directoryPath ).to.equal( paths[ 1 ] )
+
+        pushSpy.restore()
       } )
     } )
   } )
@@ -66,7 +85,11 @@ describe( 'Casper spawner', function(){
       const casperSpawner = new CasperSpawner()
       const spawnStub = sinon.stub( casperSpawner, 'spawn' )
 
-      casperSpawner._transform( 'randomfile/that/doesn/t/exist', 'utf8', function( err, data ){
+      casperSpawner._transform( {
+        paths: { 
+          testSuite: 'randomfile/that/doesn/t/exist'
+        }
+      }, 'utf8', function( err, data ){
         expect( err ).to.be.instanceOf( Error )
         expect( data ).to.not.exist
         expect( spawnStub ).to.not.have.been.called 
@@ -79,8 +102,8 @@ describe( 'Casper spawner', function(){
     it( 'does call the `spawn` function when the file is readable', function( done ) {
       const nextStepSpy = sinon.spy()
       const casperSpawner = new CasperSpawner()
-      sinon.stub( casperSpawner, 'spawn', function( fileName, next ){
-        expect( fileName ).to.equal( testFile )
+      sinon.stub( casperSpawner, 'spawn', function( { paths }, next ){
+        expect( paths.testSuite ).to.equal( testFile )
         expect( nextStepSpy ).to.not.have.been.called
         next()
         expect( nextStepSpy ).to.have.been.calledOnce
@@ -88,11 +111,36 @@ describe( 'Casper spawner', function(){
         done()
       } )
 
-      casperSpawner._transform( testFile, 'utf8', nextStepSpy )
+      casperSpawner._transform( {
+        paths: {
+          testSuite: testFile
+        }
+      }, 'utf8', nextStepSpy )
     } )
   } )
 
   describe( 'Spawner', function(){
+    it( 'fails if the test file is not well defined', function( ) {
+      const spawnStub = sinon.stub()
+      spawnStub.returns( {
+        on: function(){},
+        stdout: {
+          on: function(){}
+        },
+        stderr: {
+          on: function(){}
+        }
+      } )
+      const casperSpawner = new CasperSpawner( spawnStub )
+
+      casperSpawner.spawn( {
+        paths: {
+          testSuite: ''
+        }
+      }, function(){ } )
+
+      expect( spawnStub ).to.not.have.been.called
+    } )
     it( 'calls the spawn library', function( ) {
       const spawnStub = sinon.stub()
       spawnStub.returns( {
@@ -106,7 +154,11 @@ describe( 'Casper spawner', function(){
       } )
       const casperSpawner = new CasperSpawner( spawnStub )
 
-      casperSpawner.spawn( testFile, function(){ } )
+      casperSpawner.spawn( {
+        paths: {
+          testSuite: testFile
+        }
+      }, function(){ } )
 
       expect( spawnStub ).to.have.been.calledOnce.and.calledWith( 'casperjs' )
     } )

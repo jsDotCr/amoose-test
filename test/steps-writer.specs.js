@@ -26,7 +26,7 @@ describe( 'Steps writer', function(){
     stepsWriter._transform( {}, 'utf8', doneCb )
 
     expect( doneCb.getCall( 0 ).args[ 0 ] ).to.be.instanceOf( Error )
-    expect( doneCb.getCall( 0 ).args[ 0 ].message ).to.contain( 'Invalid test suite path provided' )
+    expect( doneCb.getCall( 0 ).args[ 0 ].message ).to.contain( 'Configuration object missing' )
   } )
 
   it( 'fails if no test suite path is provided', function(){
@@ -34,7 +34,9 @@ describe( 'Steps writer', function(){
     const doneCb = sinon.spy()
 
     stepsWriter._transform( {
-      paths: {}
+      config: {
+        paths: {}
+      }
     }, 'utf8', doneCb )
 
     expect( doneCb.getCall( 0 ).args[ 0 ] ).to.be.instanceOf( Error )
@@ -46,8 +48,10 @@ describe( 'Steps writer', function(){
     const doneCb = sinon.spy()
 
     stepsWriter._transform( {
-      paths: {
-        testSuite: ''
+      config: {
+        paths: {
+          testSuite: ''
+        }
       }
     }, 'utf8', doneCb )
 
@@ -60,8 +64,10 @@ describe( 'Steps writer', function(){
     const doneCb = sinon.spy()
 
     stepsWriter._transform( {
-      paths: {
-        testSuite: 'file.js'
+      config: {
+        paths: {
+          testSuite: 'file.js'
+        },
       },
       jsSteps: null
     }, 'utf8', doneCb )
@@ -75,8 +81,10 @@ describe( 'Steps writer', function(){
     const doneCb = sinon.spy()
 
     stepsWriter._transform( {
-      paths: {
-        testSuite: 'file.js'
+      config: {
+        paths: {
+          testSuite: 'file.js'
+        },
       },
       jsSteps: {}
     }, 'utf8', doneCb )
@@ -90,8 +98,10 @@ describe( 'Steps writer', function(){
     const fsWrite = sinon.spy( fs, 'writeFile' )
 
     stepsWriter._transform( {
-      paths: {
-        testSuite: testFile
+      config: {
+        paths: {
+          testSuite: testFile
+        },
       },
       jsSteps: 'function randomStuff(){}'
     }, 'utf8', done )
