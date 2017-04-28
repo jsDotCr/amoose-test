@@ -17,7 +17,7 @@
   "homepage": "https://github.com/jsdotcr/amoose-test",
   "dependencies": {
     "async": "~2.1.4",
-    "aws-sdk": "~2.12.0",
+    "aws-sdk": "~2.48.0",
     "babel": "~6.5.2",
     "babel-preset-es2015": "~6.22.0",
     "chai": "~3.5.0",
